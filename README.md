@@ -8,8 +8,8 @@ Passthrough firmware that proxify a Bluetooth controller connected to an mbed bo
 ## Usage 
  
 This application exposes the controller to external hosts via the default serial port. 
-Therefore HCI packets can be send and receive with from a PC connected to the 
-mbed board. Linux users can takes advantage of this to use their boards with the 
+Therefore HCI packets can be sent and received by a PC connected to the mbed 
+board. Linux users can take advantage of this to use their boards with the 
 tools provided by bluez or develop the reset sequence of their HCI driver on PC.
 
 
