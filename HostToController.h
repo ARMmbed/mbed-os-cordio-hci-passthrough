@@ -112,6 +112,8 @@ private:
                     break;
 
                 case HCI_ACL_HDR_LEN:
+                    // packet length of an ACL packet is 16 bit long; copy it
+                    // into packet length then add the header length.
                     memcpy(&packet_length, &packet[HCI_ACL_HDR_LEN - 1], sizeof(packet_length));
                     packet_length += HCI_ACL_HDR_LEN;
                     break;
