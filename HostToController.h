@@ -21,6 +21,12 @@
 #include "hci_defs.h"
 #include "util/CordioHCIHook.h"
 #include "drivers/RawSerial.h"
+#include "wsf_types.h"
+#include "wsf_buf.h"
+#include "wsf_msg.h"
+
+/* avoid many small allocs (and WSF doesn't have smaller buffers) */
+#define MIN_WSF_ALLOC (16)
 
 /**
  * Proxy implementation that transfer data from the host to the controller.
@@ -34,7 +40,8 @@ public:
        serial(serial),
        packet_state(WAITING_FOR_PACKET_TYPE),
        packet_type(0),
-       packet(),
+       packet(NULL),
+       packet_buffer_size(0),
        packet_index(0),
        packet_length(0)
     { }
@@ -53,6 +60,26 @@ private:
     }
 
     void transfer(uint8_t* buffer, uint32_t length) {
+        /* link layer expects a wsf message it will take ownership of
+         * so we maintain a buffer that is a wsf msg and if we get
+         * the packet in parts we keep growing the msg copying the old
+         * into the new msg */
+
+        uint8_t *old_msg = packet;
+
+        if (!packet || (length + packet_index > packet_buffer_size)) {
+            packet_buffer_size = packet_index + length;
+            if (packet_buffer_size < MIN_WSF_ALLOC) {
+                packet_buffer_size = MIN_WSF_ALLOC;
+            }
+            packet = (uint8_t*)WsfMsgAlloc(packet_buffer_size);
+        }
+
+        if (old_msg && (old_msg != packet)) {
+            memcpy(packet, old_msg, packet_index);
+            WsfMsgFree(old_msg);
+        }
+
         // The HCI driver expect a full packet to be transfered therefore data
         // in input must be parsed and grouped in a packet.
         while (length) {
@@ -150,6 +177,9 @@ private:
         packet_state = WAITING_FOR_PACKET_TYPE;
         packet_index = 0;
         packet_length = 0;
+        /* link layer takes ownerhsiop of the WSF message */
+        packet = NULL;
+        packet_buffer_size = 0;
     }
 
     //
@@ -178,7 +208,8 @@ private:
     mbed::RawSerial& serial;
     state_t packet_state;
     uint8_t packet_type;
-    uint8_t packet[512];
+    uint8_t *packet;
+    uint16_t packet_buffer_size;
     uint16_t packet_index;
     uint16_t packet_length;
 };
