@@ -60,29 +60,30 @@ private:
     }
 
     void transfer(uint8_t* buffer, uint32_t length) {
-        /* link layer expects a wsf message it will take ownership of
-         * so we maintain a buffer that is a wsf msg and if we get
-         * the packet in parts we keep growing the msg copying the old
-         * into the new msg */
-
-        uint8_t *old_msg = packet;
-
-        if (!packet || (length + packet_index > packet_buffer_size)) {
-            packet_buffer_size = packet_index + length;
-            if (packet_buffer_size < MIN_WSF_ALLOC) {
-                packet_buffer_size = MIN_WSF_ALLOC;
-            }
-            packet = (uint8_t*)WsfMsgAlloc(packet_buffer_size);
-        }
-
-        if (old_msg && (old_msg != packet)) {
-            memcpy(packet, old_msg, packet_index);
-            WsfMsgFree(old_msg);
-        }
-
         // The HCI driver expect a full packet to be transfered therefore data
         // in input must be parsed and grouped in a packet.
         while (length) {
+
+            /* link layer expects a wsf message it will take ownership of
+             * so we maintain a buffer that is a wsf msg and if we get
+             * the packet in parts we keep growing the msg copying the old
+             * into the new msg */
+
+            uint8_t *old_msg = packet;
+
+            if (!packet || (length + packet_index > packet_buffer_size)) {
+                packet_buffer_size = packet_index + length;
+                if (packet_buffer_size < MIN_WSF_ALLOC) {
+                    packet_buffer_size = MIN_WSF_ALLOC;
+                }
+                packet = (uint8_t*)WsfMsgAlloc(packet_buffer_size);
+            }
+
+            if (old_msg && (old_msg != packet)) {
+                memcpy(packet, old_msg, packet_index);
+                WsfMsgFree(old_msg);
+            }
+
             switch (packet_state) {
                 case WAITING_FOR_PACKET_TYPE:
                     handle_packet_type(buffer, length);
