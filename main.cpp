@@ -19,6 +19,7 @@
 #include "ControllerToHost.h"
 #include "util/CordioHCIHook.h"
 #include "util/HostSerial.h"
+#if CORDIO_ZERO_COPY_HCI
 #include "wsf_types.h"
 #include "wsf_buf.h"
 #include "wsf_msg.h"
@@ -27,6 +28,7 @@
 #include "wsf_timer.h"
 #include "hci_handler.h"
 #include "mbed.h"
+#endif CORDIO_ZERO_COPY_HCI
 
 using ble::vendor::cordio::CordioHCIHook;
 
@@ -34,6 +36,7 @@ using ble::vendor::cordio::CordioHCIHook;
 HostToController host_to_controller(util::get_host_serial());
 ControllerToHost controller_to_host(util::get_host_serial());
 
+#if CORDIO_ZERO_COPY_HCI
 extern uint8_t *SystemHeapStart;
 extern uint32_t SystemHeapSize;
 
@@ -61,6 +64,7 @@ extern "C" void wsf_mbed_ble_signal_event(void)
 {
     // do nothing
 }
+#endif CORDIO_ZERO_COPY_HCI
 
 int main() {
     ble::vendor::cordio::CordioHCIDriver& hci_driver = CordioHCIHook::get_driver();
