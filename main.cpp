@@ -57,6 +57,11 @@ void init_wsf(ble::vendor::cordio::buf_pool_desc_t& buf_pool_desc) {
     WsfTimerInit();
 }
 
+extern "C" void wsf_mbed_ble_signal_event(void)
+{
+    // do nothing
+}
+
 int main() {
     ble::vendor::cordio::CordioHCIDriver& hci_driver = CordioHCIHook::get_driver();
 
