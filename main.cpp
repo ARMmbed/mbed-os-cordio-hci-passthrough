@@ -84,6 +84,23 @@ int main() {
         }
 
         wsfOsDispatcher();
+
+        bool sleep = false;
+        {
+            /* call needs interrupts disabled */
+            CriticalSectionLock critical_section;
+            if (wsfOsReadyToSleep()) {
+                sleep = true;
+            }
+        }
+
+        uint64_t time_spent = (uint64_t) timer.read_high_resolution_us();
+
+        /* don't bother sleeping if we're already past tick */
+        if (sleep && (WSF_MS_PER_TICK * 1000 > time_spent)) {
+            /* sleep to maintain constant tick rate */
+            wait_us(WSF_MS_PER_TICK * 1000 - time_spent);
+        }
     }
 
     return 0;
