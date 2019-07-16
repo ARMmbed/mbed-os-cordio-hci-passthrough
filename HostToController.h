@@ -22,6 +22,15 @@
 #include "util/CordioHCIHook.h"
 #include "drivers/RawSerial.h"
 
+#if CORDIO_ZERO_COPY_HCI
+#include "wsf_types.h"
+#include "wsf_buf.h"
+#include "wsf_msg.h"
+
+/* avoid many small allocs (and WSF doesn't have smaller buffers) */
+#define MIN_WSF_ALLOC (16)
+#endif //CORDIO_ZERO_COPY_HCI
+
 /**
  * Proxy implementation that transfer data from the host to the controller.
  */
@@ -34,7 +43,10 @@ public:
        serial(serial),
        packet_state(WAITING_FOR_PACKET_TYPE),
        packet_type(0),
-       packet(),
+#if CORDIO_ZERO_COPY_HCI
+       packet(NULL),
+       packet_buffer_size(0),
+#endif //CORDIO_ZERO_COPY_HCI
        packet_index(0),
        packet_length(0)
     { }
@@ -56,6 +68,28 @@ private:
         // The HCI driver expect a full packet to be transfered therefore data
         // in input must be parsed and grouped in a packet.
         while (length) {
+#if CORDIO_ZERO_COPY_HCI
+            /* link layer expects a wsf message it will take ownership of
+             * so we maintain a buffer that is a wsf msg and if we get
+             * the packet in parts we keep growing the msg copying the old
+             * into the new msg */
+
+            uint8_t *old_msg = packet;
+
+            if (!packet || (length + packet_index > packet_buffer_size)) {
+                packet_buffer_size = packet_index + length;
+                if (packet_buffer_size < MIN_WSF_ALLOC) {
+                    packet_buffer_size = MIN_WSF_ALLOC;
+                }
+                packet = (uint8_t*)WsfMsgAlloc(packet_buffer_size);
+            }
+
+            if (old_msg && (old_msg != packet)) {
+                memcpy(packet, old_msg, packet_index);
+                WsfMsgFree(old_msg);
+            }
+#endif // CORDIO_ZERO_COPY_HCI
+
             switch (packet_state) {
                 case WAITING_FOR_PACKET_TYPE:
                     handle_packet_type(buffer, length);
@@ -150,6 +184,11 @@ private:
         packet_state = WAITING_FOR_PACKET_TYPE;
         packet_index = 0;
         packet_length = 0;
+#if CORDIO_ZERO_COPY_HCI
+        /* link layer takes ownerhsiop of the WSF message */
+        packet = NULL;
+        packet_buffer_size = 0;
+#endif // CORDIO_ZERO_COPY_HCI
     }
 
     //
@@ -178,7 +217,12 @@ private:
     mbed::RawSerial& serial;
     state_t packet_state;
     uint8_t packet_type;
+#if CORDIO_ZERO_COPY_HCI
+    uint8_t *packet;
+    uint16_t packet_buffer_size;
+#else
     uint8_t packet[512];
+#endif // CORDIO_ZERO_COPY_HCI
     uint16_t packet_index;
     uint16_t packet_length;
 };
