@@ -59,15 +59,18 @@ void init_wsf(ble::vendor::cordio::buf_pool_desc_t& buf_pool_desc) {
 
 int main() {
     ble::vendor::cordio::CordioHCIDriver& hci_driver = CordioHCIHook::get_driver();
-    ble::vendor::cordio::buf_pool_desc_t buf_pool_desc = hci_driver.get_buffer_pool_description();
 
+#if CORDIO_ZERO_COPY_HCI
+    ble::vendor::cordio::buf_pool_desc_t buf_pool_desc = hci_driver.get_buffer_pool_description();
     init_wsf(buf_pool_desc);
+#endif
 
     hci_driver.initialize();
 
     host_to_controller.start();
     controller_to_host.start();
 
+#if CORDIO_ZERO_COPY_HCI
     uint64_t last_update_us;
     mbed::LowPowerTimer timer;
 
@@ -102,6 +105,11 @@ int main() {
             wait_us(WSF_MS_PER_TICK * 1000 - time_spent);
         }
     }
+#else
+    while(true) {
+        rtos::Thread::wait(osWaitForever);
+    }
+#endif // CORDIO_ZERO_COPY_HCI
 
     return 0;
 }
