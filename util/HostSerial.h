@@ -17,7 +17,7 @@
 #ifndef UTIL_HOSTSERIAL_H_
 #define UTIL_HOSTSERIAL_H_
 
-#include "drivers/RawSerial.h"
+#include "drivers/UnbufferedSerial.h"
 
 namespace util {
 
@@ -35,8 +35,8 @@ namespace util {
  * Return the host serial instance
  * @return The serial instance connected to the host.
  */
-mbed::RawSerial& get_host_serial() {
-    static mbed::RawSerial serial(USBTX, USBRX);
+mbed::UnbufferedSerial& get_host_serial() {
+    static mbed::UnbufferedSerial serial(USBTX, USBRX);
     static bool initialized = false;
 
     if (!initialized) {

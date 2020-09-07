@@ -18,8 +18,9 @@
 #define CONTROLLERTOHOST_H_
 
 #include "util/CordioHCIHook.h"
-#include "drivers/RawSerial.h"
+#include "drivers/UnbufferedSerial.h"
 #include "UnidirectionalProxy.h"
+#include "platform/Span.h"
 
 /**
  * Proxy implementation that transfer data from the controller to the host.
@@ -34,7 +35,7 @@ public:
      *
      * @param serial The serial instance used by the host
      */
-    ControllerToHost(mbed::RawSerial& serial) :
+    ControllerToHost(mbed::UnbufferedSerial& serial) :
        UnidirectionalProxy<ControllerToHost>(),
        serial(serial)
     { }
@@ -53,13 +54,13 @@ private:
             return !_read;
         }
 
-        const ble::ArrayView<const uint8_t>& read() {
+        const  mbed::Span<const uint8_t>& read() {
             _read = true;
             return _data_view;
         }
 
     private:
-        ble::ArrayView<const uint8_t> _data_view;
+        mbed::Span<const uint8_t> _data_view;
         bool _read;
     };
 
@@ -70,15 +71,13 @@ private:
     //
     void register_listener() {
         self = this;
-        ble::vendor::cordio::CordioHCIHook::set_data_received_handler(
+        ble::CordioHCIHook::set_data_received_handler(
             when_controller_data_dispatch
         );
     }
 
     void transfer(uint8_t* buffer, uint32_t length) {
-        for (size_t i = 0; i < length; ++i) {
-            serial.putc(buffer[i]);
-        }
+        serial.write(buffer, length);
     }
 
     // handle reception of data
@@ -92,7 +91,7 @@ private:
     }
 
     static ControllerToHost* self;
-    mbed::RawSerial& serial;
+    mbed::UnbufferedSerial& serial;
 };
 
 

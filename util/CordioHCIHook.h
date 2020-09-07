@@ -20,11 +20,9 @@
 #include "driver/CordioHCITransportDriver.h"
 #include "driver/CordioHCIDriver.h"
 
-extern ble::vendor::cordio::CordioHCIDriver& ble_cordio_get_hci_driver();
+extern ble::CordioHCIDriver& ble_cordio_get_hci_driver();
 
 namespace ble {
-namespace vendor {
-namespace cordio {
 
 /**
  * Access to the internal state of the Cordio driver.
@@ -52,8 +50,6 @@ struct CordioHCIHook {
     }
 };
 
-} // namespace cordio
-} // namespace vendor
 } // namespace ble
 
 
