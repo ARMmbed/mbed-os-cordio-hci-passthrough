@@ -18,7 +18,7 @@
 #define BLE_CLIAPP_UTIL_CIRCULARBUFFER_H
 
 #include <algorithm>
-#include "ble/ArrayView.h"
+#include "platform/Span.h"
 
 namespace util {
 
@@ -89,7 +89,7 @@ public:
         return push(src, N);
     }
 
-    CounterType push(const ble::ArrayView<const T>& src) {
+    CounterType push(const mbed::Span<const T>& src) {
         return push(src.data(), src.size());
     }
 

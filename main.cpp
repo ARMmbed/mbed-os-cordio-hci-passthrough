@@ -19,20 +19,19 @@
 #include "ControllerToHost.h"
 #include "util/CordioHCIHook.h"
 #include "util/HostSerial.h"
-
-using ble::vendor::cordio::CordioHCIHook;
+#include "mbed_power_mgmt.h"
 
 // static initialization as these objects are large.
 HostToController host_to_controller(util::get_host_serial());
 ControllerToHost controller_to_host(util::get_host_serial());
 
 int main() {
-    CordioHCIHook::get_driver().initialize();
+    ble::CordioHCIHook::get_driver().initialize();
     host_to_controller.start();
     controller_to_host.start();
 
     while (true) {
-        rtos::Thread::wait(osWaitForever);
+        sleep();
     }
 
     return 0;

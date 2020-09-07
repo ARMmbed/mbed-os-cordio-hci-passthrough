@@ -20,7 +20,7 @@
 #include "UnidirectionalProxy.h"
 #include "hci_defs.h"
 #include "util/CordioHCIHook.h"
-#include "drivers/RawSerial.h"
+#include "drivers/UnbufferedSerial.h"
 
 /**
  * Proxy implementation that transfer data from the host to the controller.
@@ -29,7 +29,7 @@ class HostToController : public UnidirectionalProxy<HostToController> {
     friend UnidirectionalProxy<HostToController>;
 
 public:
-    HostToController(mbed::RawSerial& serial) :
+    HostToController(mbed::UnbufferedSerial& serial) :
        UnidirectionalProxy<HostToController>(),
        serial(serial),
        packet_state(WAITING_FOR_PACKET_TYPE),
@@ -142,7 +142,7 @@ private:
 
     // transfer the packet and reset the state machine
     void transfer_packet() {
-        ble::vendor::cordio::CordioHCIHook::get_transport_driver().write(
+        ble::CordioHCIHook::get_transport_driver().write(
             packet_type,
             packet_length,
             packet
@@ -161,7 +161,9 @@ private:
     }
 
     uint8_t read() {
-        return serial.getc();
+        uint8_t buffer;
+        serial.read(&buffer, 1);
+        return buffer;
     }
 
     // handle reception of data
@@ -175,7 +177,7 @@ private:
         WAITING_FOR_DATA_COMPLETE
     };
 
-    mbed::RawSerial& serial;
+    mbed::UnbufferedSerial& serial;
     state_t packet_state;
     uint8_t packet_type;
     uint8_t packet[512];
